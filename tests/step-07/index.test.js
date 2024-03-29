@@ -1,11 +1,11 @@
 const readCSV = require('../../src/csvReader');
-const parseQuery = require('../../src/queryParser');
+const {parseQuery} = require('../../src/queryParser');
 const executeSELECTQuery = require('../../src/index');
 
 test('Read CSV File', async () => {
     const data = await readCSV('./student.csv');
     expect(data.length).toBeGreaterThan(0);
-    expect(data.length).toBe(3);
+    expect(data.length).toBe(4);
     expect(data[0].name).toBe('John');
     expect(data[0].age).toBe('30'); //ignore the string type here, we will fix this later
 });
@@ -17,6 +17,7 @@ test('Parse SQL Query', () => {
         fields: ['id', 'name'],
         table: 'sample',
         whereClauses: [],
+        joinType:null,
         joinTable:null,
         joinCondition:null
     });
@@ -44,7 +45,8 @@ test('Parse SQL Query with WHERE Clause', () => {
           value: "25",
         }],
         joinCondition: null,
-       joinTable: null
+       joinTable: null,
+       joinType:null
     });
 });
 
@@ -73,7 +75,8 @@ test('Parse SQL Query with Multiple WHERE Clauses', () => {
             "value": "John",
         }],
         joinCondition: null,
-       joinTable: null
+       joinTable: null,
+       joinType:null
     });
 });
 
@@ -87,13 +90,13 @@ test('Execute SQL Query with Multiple WHERE Clause', async () => {
 test('Execute SQL Query with Greater Than', async () => {
     const queryWithGT = 'SELECT id FROM student WHERE age > 22';
     const result = await executeSELECTQuery(queryWithGT);
-    expect(result.length).toEqual(2);
+    expect(result.length).toEqual(3);
     expect(result[0]).toHaveProperty('id');
 });
 
 test('Execute SQL Query with Not Equal to', async () => {
     const queryWithGT = 'SELECT name FROM student WHERE age != 25';
     const result = await executeSELECTQuery(queryWithGT);
-    expect(result.length).toEqual(2);
+    expect(result.length).toEqual(3);
     expect(result[0]).toHaveProperty('name');
 });
