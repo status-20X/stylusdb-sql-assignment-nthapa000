@@ -21,7 +21,8 @@ test('Parse SQL Query', () => {
         joinCondition:null,
         joinType:null,
         groupByFields: null,
-        hasAggregateWithoutGroupBy: false
+        hasAggregateWithoutGroupBy: false,
+        orderByFields:null
     });
 });
 

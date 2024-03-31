@@ -151,10 +151,12 @@ function applyGroupBy(data, groupByFields, aggregateFunctions) {
 }
 
 async function executeSELECTQuery(query) {
-    const { fields, table, whereClauses,joinType, joinTable, joinCondition,groupByFields,hasAggregateWithoutGroupBy } = parseQuery(query);
+    const { fields, table, whereClauses,joinType, joinTable, joinCondition,groupByFields,hasAggregateWithoutGroupBy,orderByFields } = parseQuery(query);
+    
     let data = await readCSV(`${table}.csv`);
     console.log("data before join condition",data)
     // LOGIC for applying the joins
+    console.log("groupByfieds",groupByFields)
     if (joinTable && joinCondition) {
         const joinData = await readCSV(`${joinTable}.csv`);
         switch (joinType.toUpperCase()) {
@@ -212,9 +214,36 @@ async function executeSELECTQuery(query) {
         return [output];
     }else if(groupByFields){
         groupData = applyGroupBy(filteredData,groupByFields,fields)
+        console.log("Group dataa",groupData)
+        
+        let orderOutput = groupData;
+        if(orderByFields){
+            orderOutput=groupData.sort((a, b) => {
+                for (let { fieldName, order } of orderByFields) {
+                    if (a[fieldName] < b[fieldName]) return order === 'ASC' ? -1 : 1;
+                    if (a[fieldName] > b[fieldName]) return order === 'ASC' ? 1 : -1;
+                }
+                return 0;
+            });
+        }
         return groupData;
-    }else{
-        return groupData.map(row => {
+
+
+    } else{
+
+        // Order them by the specified fields
+        let orderOutput = groupData;
+        if (orderByFields) {
+            orderOutput = groupData.sort((a, b) => {
+                for (let { fieldName, order } of orderByFields) {
+                    if (a[fieldName] < b[fieldName]) return order === 'ASC' ? -1 : 1;
+                    if (a[fieldName] > b[fieldName]) return order === 'ASC' ? 1 : -1;
+                }
+                return 0;
+            });
+        }   
+
+        return orderOutput.map(row => {
         const selectedRow = {};
         fields.forEach(field => {
             selectedRow[field] = row[field];
@@ -280,7 +309,7 @@ function parsingValue(value) {
     return value;
 }
 
-const query1=`SELECT student.name, enrollment.course FROM student RIGHT JOIN enrollment ON student.id=enrollment.student_id WHERE enrollment.course = 'Chemistry'`;
+const query1=`SELECT name FROM student ORDER BY name ASC`;
 const ret = executeSELECTQuery(query1)
 
 module.exports = executeSELECTQuery;

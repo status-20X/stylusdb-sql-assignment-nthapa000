@@ -4,6 +4,20 @@
 function parseQuery(query) {
     // First, let's trim the query to remove any leading/trailing whitespaces
     query = query.trim();
+
+    
+    const orderByRegex = /\sORDER BY\s(.+)/i;
+    const orderByMatch = query.match(orderByRegex);
+
+    let orderByFields = null;
+    if (orderByMatch) {
+        orderByFields = orderByMatch[1].split(',').map(field => {
+            const [fieldName, order] = field.trim().split(/\s+/);
+            return { fieldName, order: order ? order.toUpperCase() : 'ASC' };
+        });
+        query = query.replace(orderByRegex, '');
+    }
+
     const groupByRegex = /\sGROUP BY\s(.+)/i;
     const groupByMatch = query.match(groupByRegex);
     // Initialize variables for different parts of the query
@@ -73,6 +87,7 @@ if (whereClause && whereClause.includes('GROUP BY')) {
         hasAggregateWithoutGroupBy = true;
     }
 
+
     return {
         fields: fields.split(',').map(field => field.trim()),
         table: table.trim(),
@@ -81,7 +96,8 @@ if (whereClause && whereClause.includes('GROUP BY')) {
         joinTable,
         joinCondition,
         groupByFields,
-        hasAggregateWithoutGroupBy
+        hasAggregateWithoutGroupBy,
+        orderByFields
     };
 }
 
