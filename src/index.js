@@ -152,7 +152,7 @@ function applyGroupBy(data, groupByFields, aggregateFunctions) {
 
 async function executeSELECTQuery(query) {
     try{
-    const { fields, table, whereClauses,joinType, joinTable, joinCondition,groupByFields,hasAggregateWithoutGroupBy,orderByFields,limit } = parseQuery(query);
+    const { fields, table, whereClauses,joinType, joinTable, joinCondition,groupByFields,hasAggregateWithoutGroupBy,orderByFields,limit,isDistinct } = parseQuery(query);
     
     console.log("join Table",joinTable)
     console.log("table",table)
@@ -232,7 +232,9 @@ async function executeSELECTQuery(query) {
         if (limit !== null) {
             orderOutput = orderOutput.slice(0, limit);
         }
-        
+        if (isDistinct) {
+            groupData = [...new Map(groupData.map(item => [fields.map(field => item[field]).join('|'), item])).values()];
+        }
         return groupData;
 
 
@@ -253,12 +255,16 @@ async function executeSELECTQuery(query) {
             orderOutput = orderOutput.slice(0, limit);
         }
         console.log("orderOUTput",orderOutput)
+        if (isDistinct) {
+            orderOutput = [...new Map(orderOutput.map(item => [fields.map(field => item[field]).join('|'), item])).values()];
+        }
         return orderOutput.map(row => {
         const selectedRow = {};
         fields.forEach(field => {
-            selectedRow[field] = row[field];
+            selectedRow[field]=row[field];
         });
         console.log("final Solution",selectedRow)
+        
         return selectedRow;
     });
     }
@@ -308,7 +314,11 @@ function parsingValue(value) {
     return value;
 }
 
-const query = 'SELECT id, name FROM student LIMIT 0';
-const ret = executeSELECTQuery(query)
-
+async function  func() {
+    const query = 'SELECT DISTINCT student.name FROM student INNER JOIN enrollment ON student.id = enrollment.student_id';
+    const result = await executeSELECTQuery(query);
+    // Expecting names of students who are enrolled in any course
+    console.log("Result",result)
+}
+func()
 module.exports = executeSELECTQuery;

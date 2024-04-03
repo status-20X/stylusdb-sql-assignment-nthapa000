@@ -10,9 +10,14 @@ function parseQuery(query) {
     const orderByRegex = /\sORDER BY\s(.+)/i;
     const groupByRegex = /\sGROUP BY\s(.+)/i;
     const selectRegex = /^SELECT\s(.+?)\sFROM\s(.+)/i;
+    let isDistinct=false;
+    if (query.toUpperCase().includes('SELECT DISTINCT')) {
+        isDistinct = true;
+        query = query.replace('SELECT DISTINCT', 'SELECT');
+    }
 
     const limitMatch = query.match(limitRegex);
-
+    
     let limit = null;
     if (limitMatch) {
         limit = parseInt(limitMatch[1]);
@@ -60,10 +65,8 @@ if (whereClause && whereClause.includes('GROUP BY')) {
     if (!selectMatch) {
         throw new Error('Invalid SELECT format');
     }
-
     const [, fields, rawTable] = selectMatch;
  
-
     let joinType ;
     let joinTable ;
     let joinCondition ;
@@ -110,7 +113,8 @@ if (whereClause && whereClause.includes('GROUP BY')) {
         groupByFields,
         hasAggregateWithoutGroupBy,
         orderByFields,
-        limit
+        limit,
+        isDistinct
     };
 }
 catch(error){
