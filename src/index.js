@@ -151,6 +151,7 @@ function applyGroupBy(data, groupByFields, aggregateFunctions) {
 }
 
 async function executeSELECTQuery(query) {
+    try{
     const { fields, table, whereClauses,joinType, joinTable, joinCondition,groupByFields,hasAggregateWithoutGroupBy,orderByFields,limit } = parseQuery(query);
     
     console.log("join Table",joinTable)
@@ -261,6 +262,10 @@ async function executeSELECTQuery(query) {
         return selectedRow;
     });
     }
+}
+catch(error){
+    throw new Error(`Error executing query: ${error.message}`);
+}
 }
 
 function evaluateCondition(row, clause) {

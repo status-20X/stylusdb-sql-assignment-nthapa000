@@ -3,6 +3,7 @@
 
 function parseQuery(query) {
     // First, let's trim the query to remove any leading/trailing whitespaces
+    try{
     query = query.trim();
 
     const limitRegex = /\sLIMIT\s(\d+)/i;
@@ -111,6 +112,11 @@ if (whereClause && whereClause.includes('GROUP BY')) {
         orderByFields,
         limit
     };
+}
+catch(error){
+    console.log(error)
+    throw new Error(`Query parsing error: ${error.message}`)
+}
 }
 
 // src/queryParser.js
