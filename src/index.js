@@ -151,8 +151,10 @@ function applyGroupBy(data, groupByFields, aggregateFunctions) {
 }
 
 async function executeSELECTQuery(query) {
-    const { fields, table, whereClauses,joinType, joinTable, joinCondition,groupByFields,hasAggregateWithoutGroupBy,orderByFields } = parseQuery(query);
+    const { fields, table, whereClauses,joinType, joinTable, joinCondition,groupByFields,hasAggregateWithoutGroupBy,orderByFields,limit } = parseQuery(query);
     
+    console.log("join Table",joinTable)
+    console.log("table",table)
     let data = await readCSV(`${table}.csv`);
     console.log("data before join condition",data)
     // LOGIC for applying the joins
@@ -226,6 +228,10 @@ async function executeSELECTQuery(query) {
                 return 0;
             });
         }
+        if (limit !== null) {
+            orderOutput = orderOutput.slice(0, limit);
+        }
+        
         return groupData;
 
 
@@ -242,31 +248,19 @@ async function executeSELECTQuery(query) {
                 return 0;
             });
         }   
-
+        if (limit !== null) {
+            orderOutput = orderOutput.slice(0, limit);
+        }
+        console.log("orderOUTput",orderOutput)
         return orderOutput.map(row => {
         const selectedRow = {};
         fields.forEach(field => {
             selectedRow[field] = row[field];
         });
+        console.log("final Solution",selectedRow)
         return selectedRow;
     });
     }
-    // if (groupByFields) {
-    //     data = applyGroupBy(data, groupByFields, fields);
-    // }
-
-    // const filteredData = whereClauses.length > 0
-    // ? data.filter(row => whereClauses.every(clause => evaluateCondition(row, clause)))
-    // : data;
-
-    // // Select the specified fields
-    // return filteredData.map(row => {
-    //     const selectedRow = {};
-    //     fields.forEach(field => {
-    //         selectedRow[field] = row[field];
-    //     });
-    //     return selectedRow;
-    // });
 }
 
 function evaluateCondition(row, clause) {
@@ -309,7 +303,7 @@ function parsingValue(value) {
     return value;
 }
 
-const query1=`SELECT name FROM student ORDER BY name ASC`;
-const ret = executeSELECTQuery(query1)
+const query = 'SELECT id, name FROM student LIMIT 0';
+const ret = executeSELECTQuery(query)
 
 module.exports = executeSELECTQuery;

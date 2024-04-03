@@ -5,8 +5,21 @@ function parseQuery(query) {
     // First, let's trim the query to remove any leading/trailing whitespaces
     query = query.trim();
 
-    
+    const limitRegex = /\sLIMIT\s(\d+)/i;
     const orderByRegex = /\sORDER BY\s(.+)/i;
+    const groupByRegex = /\sGROUP BY\s(.+)/i;
+    const selectRegex = /^SELECT\s(.+?)\sFROM\s(.+)/i;
+
+    const limitMatch = query.match(limitRegex);
+
+    let limit = null;
+    if (limitMatch) {
+        limit = parseInt(limitMatch[1]);
+        query = query.replace(limitRegex,'')
+    }
+    console.log("limit",limit)
+    console.log(typeof(limit))
+    
     const orderByMatch = query.match(orderByRegex);
 
     let orderByFields = null;
@@ -18,7 +31,7 @@ function parseQuery(query) {
         query = query.replace(orderByRegex, '');
     }
 
-    const groupByRegex = /\sGROUP BY\s(.+)/i;
+    
     const groupByMatch = query.match(groupByRegex);
     // Initialize variables for different parts of the query
     let selectPart, fromPart;
@@ -42,7 +55,6 @@ if (whereClause && whereClause.includes('GROUP BY')) {
     const joinPart = joinSplit.length > 1 ? joinSplit[1].trim() : null;
 
     // Parse the SELECT part
-    const selectRegex = /^SELECT\s(.+?)\sFROM\s(.+)/i;
     const selectMatch = selectPart.match(selectRegex);
     if (!selectMatch) {
         throw new Error('Invalid SELECT format');
@@ -87,7 +99,6 @@ if (whereClause && whereClause.includes('GROUP BY')) {
         hasAggregateWithoutGroupBy = true;
     }
 
-
     return {
         fields: fields.split(',').map(field => field.trim()),
         table: table.trim(),
@@ -97,7 +108,8 @@ if (whereClause && whereClause.includes('GROUP BY')) {
         joinCondition,
         groupByFields,
         hasAggregateWithoutGroupBy,
-        orderByFields
+        orderByFields,
+        limit
     };
 }
 
@@ -135,5 +147,9 @@ function parseJoinClause(query) {
         joinCondition: null
     };
 }
+
+const query = 'SELECT id, name FROM student ORDER BY age DESC LIMIT 2';
+const res = parseQuery(query)
+
 
 module.exports = {parseQuery,parseJoinClause};
