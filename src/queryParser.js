@@ -15,19 +15,17 @@ function parseQuery(query) {
         isDistinct = true;
         query = query.replace('SELECT DISTINCT', 'SELECT');
     }
-
     const limitMatch = query.match(limitRegex);
     
     let limit = null;
     if (limitMatch) {
-        limit = parseInt(limitMatch[1]);
+        limit = parseInt(limitMatch[1],10);
         query = query.replace(limitRegex,'')
     }
     console.log("limit",limit)
     console.log(typeof(limit))
-    
-    const orderByMatch = query.match(orderByRegex);
 
+    const orderByMatch = query.match(orderByRegex);
     let orderByFields = null;
     if (orderByMatch) {
         orderByFields = orderByMatch[1].split(',').map(field => {
@@ -36,8 +34,6 @@ function parseQuery(query) {
         });
         query = query.replace(orderByRegex, '');
     }
-
-    
     const groupByMatch = query.match(groupByRegex);
     // Initialize variables for different parts of the query
     let selectPart, fromPart;
@@ -51,8 +47,7 @@ function parseQuery(query) {
 if (whereClause && whereClause.includes('GROUP BY')) {
     whereClause = whereClause.split(/\sGROUP\sBY\s/i)[0].trim();
 }
-
-
+console.log(whereClause)
     // Split the remaining query at the JOIN clause if it exists
     const joinSplit = query.split(/\s(INNER|LEFT|RIGHT) JOIN\s/i);
     selectPart = joinSplit[0].trim(); // Everything before JOIN clause
@@ -102,7 +97,7 @@ if (whereClause && whereClause.includes('GROUP BY')) {
     if (hasAggregateFunction && !groupByMatch) {
         hasAggregateWithoutGroupBy = true;
     }
-
+    console.log("where clausese",whereClauses)
     return {
         fields: fields.split(',').map(field => field.trim()),
         table: table.trim(),
@@ -125,14 +120,20 @@ catch(error){
 
 // src/queryParser.js
 function parseWhereClause(whereString) {
-    const conditionRegex = /(.*?)(=|!=|>|<|>=|<=)(.*)/;
+    const conditionRegex =/(.*?)(=|!=|>|<|>=|<=)(.*)/;
     return whereString.split(/ AND | OR /i).map(conditionString => {
+        if (conditionString.includes(' LIKE '))
+        {
+            const [field, pattern] = conditionString.split(/\sLIKE\s/i);
+            return { field: field.trim(), operator: 'LIKE', value: pattern.trim().replace(/^'(.*)'$/, '$1') };
+        }else{
         const match = conditionString.match(conditionRegex);
         if (match) {
             const [, field, operator, value] = match;
             return { field: field.trim(), operator, value: value.trim() };
         }
         throw new Error('Invalid WHERE clause format');
+        }
     });
 }
 
@@ -158,7 +159,7 @@ function parseJoinClause(query) {
     };
 }
 
-const query = 'SELECT id, name FROM student ORDER BY age DESC LIMIT 2';
+const query = "SELECT DISTINCT name FROM student WHERE name LIKE '%e%";
 const res = parseQuery(query)
 
 

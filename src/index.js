@@ -285,6 +285,12 @@ function evaluateCondition(row, clause) {
     let conditionValue = parsingValue(value);
     console.log("rowValue",rowValue);
     console.log("conditionValue",conditionValue);
+    if (operator === 'LIKE') {
+        // Transform SQL LIKE pattern to JavaScript RegExp pattern
+        const regexPattern = '^' + value.replace(/%/g, '.*').replace(/_/g, '.') + '$';
+        const regex = new RegExp(regexPattern, 'i'); // 'i' for case-insensitive matching
+        return regex.test(row[field]);
+    }
     // Compare the field value with the condition value
     switch (operator) {
         case '=': return rowValue === conditionValue;
