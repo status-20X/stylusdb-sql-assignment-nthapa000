@@ -1,7 +1,7 @@
 // src/queryParser.js
 
 
-function parseQuery(query) {
+function parseSelectQuery(query) {
     // First, let's trim the query to remove any leading/trailing whitespaces
     try{
     query = query.trim();
@@ -22,8 +22,8 @@ function parseQuery(query) {
         limit = parseInt(limitMatch[1],10);
         query = query.replace(limitRegex,'')
     }
-    console.log("limit",limit)
-    console.log(typeof(limit))
+    // console.log("limit",limit)
+    // console.log(typeof(limit))
 
     const orderByMatch = query.match(orderByRegex);
     let orderByFields = null;
@@ -47,7 +47,7 @@ function parseQuery(query) {
 if (whereClause && whereClause.includes('GROUP BY')) {
     whereClause = whereClause.split(/\sGROUP\sBY\s/i)[0].trim();
 }
-console.log(whereClause)
+// console.log(whereClause)
     // Split the remaining query at the JOIN clause if it exists
     const joinSplit = query.split(/\s(INNER|LEFT|RIGHT) JOIN\s/i);
     selectPart = joinSplit[0].trim(); // Everything before JOIN clause
@@ -97,7 +97,7 @@ console.log(whereClause)
     if (hasAggregateFunction && !groupByMatch) {
         hasAggregateWithoutGroupBy = true;
     }
-    console.log("where clausese",whereClauses)
+    // console.log("where clausese",whereClauses)
     return {
         fields: fields.split(',').map(field => field.trim()),
         table: table.trim(),
@@ -159,8 +159,25 @@ function parseJoinClause(query) {
     };
 }
 
-const query = "SELECT DISTINCT name FROM student WHERE name LIKE '%e%";
-const res = parseQuery(query)
+function parseINSERTQuery(query){
+    const insertRegex = /INSERT\s+INTO\s+([^\s\(]+)\s*\(([^)]+)\)\s*VALUES\s*\(([^)]+)\)/i;
+    const match = query.match(insertRegex)
+
+    if(!match){
+        throw new error("Wrong INSERT INTO syntax")
+    }
+
+    const [, table, columns, values] = match;
+    return {
+        type:'INSERT',
+        table:table.trim(),
+        columns:columns.split(',').map(column => column.trim()),
+        values: values.split(',').map(value => value.trim())
+    }
+}
+
+// const query = "SELECT DISTINCT name FROM student WHERE name LIKE '%e%";
+// const res = parseSelectQuery(query)
 
 
-module.exports = {parseQuery,parseJoinClause};
+module.exports = {parseSelectQuery,parseJoinClause,parseINSERTQuery};

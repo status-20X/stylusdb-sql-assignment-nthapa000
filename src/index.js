@@ -1,7 +1,7 @@
 // src/index.js
 
-const {parseQuery} = require('./queryParser');
-const readCSV = require('./csvReader');
+const {parseSelectQuery,parseINSERTQuery} = require('./queryParser');
+const { readCSV, writeCSV } = require('./csvReader');
 
 // Helper functions for different JOIN types
 function performInnerJoin(data, joinData, joinCondition, fields, table) {
@@ -59,11 +59,11 @@ function createResultRow(mainRow, joinRow, fields, table, includeAllMainFields) 
 
 function performRightJoin(data, joinData, joinCondition, fields, table) {
     // Cache the structure of a main table row (keys only)
-    console.log("Inside Right join")
-    console.log("data",data)
-    console.log("Joindata",joinData)
-    console.log("JoinCodnitio",joinCondition)
-    console.log("fields",fields)
+    // console.log("Inside Right join")
+    // console.log("data",data)
+    // console.log("Joindata",joinData)
+    // console.log("JoinCodnitio",joinCondition)
+    // console.log("fields",fields)
     const RowStructure = data.length > 0 ? Object.keys(data[0]).reduce((acc, key) => {
         acc[key] = null; // Set all values to null initially
         return acc;
@@ -79,7 +79,7 @@ function performRightJoin(data, joinData, joinCondition, fields, table) {
         // Include all necessary fields from the 'student' table
         return createResultRow(mainRowToUse, joinRow, fields, table, true);
     });
-    console.log("rightJOinedDAta",rightJoinedData)
+    // console.log("rightJOinedDAta",rightJoinedData)
     return rightJoinedData
 }
 
@@ -152,14 +152,14 @@ function applyGroupBy(data, groupByFields, aggregateFunctions) {
 
 async function executeSELECTQuery(query) {
     try{
-    const { fields, table, whereClauses,joinType, joinTable, joinCondition,groupByFields,hasAggregateWithoutGroupBy,orderByFields,limit,isDistinct } = parseQuery(query);
+    const { fields, table, whereClauses,joinType, joinTable, joinCondition,groupByFields,hasAggregateWithoutGroupBy,orderByFields,limit,isDistinct } = parseSelectQuery(query);
     
-    console.log("join Table",joinTable)
-    console.log("table",table)
+    // console.log("join Table",joinTable)
+    // console.log("table",table)
     let data = await readCSV(`${table}.csv`);
-    console.log("data before join condition",data)
+    // console.log("data before join condition",data)
     // LOGIC for applying the joins
-    console.log("groupByfieds",groupByFields)
+    // console.log("groupByfieds",groupByFields)
     if (joinTable && joinCondition) {
         const joinData = await readCSV(`${joinTable}.csv`);
         switch (joinType.toUpperCase()) {
@@ -178,11 +178,11 @@ async function executeSELECTQuery(query) {
         }
     }
 
-    console.log("data",data)
+    // console.log("data",data)
     let filteredData = whereClauses.length > 0
     ? data.filter(row => whereClauses.every(clause => evaluateCondition(row, clause)))
     : data;
-    console.log("filtered Data after condition",filteredData)
+    // console.log("filtered Data after condition",filteredData)
 
     let groupData = filteredData;
     if(hasAggregateWithoutGroupBy){
@@ -217,7 +217,7 @@ async function executeSELECTQuery(query) {
         return [output];
     }else if(groupByFields){
         groupData = applyGroupBy(filteredData,groupByFields,fields)
-        console.log("Group dataa",groupData)
+        // console.log("Group dataa",groupData)
         
         let orderOutput = groupData;
         if(orderByFields){
@@ -254,7 +254,7 @@ async function executeSELECTQuery(query) {
         if (limit !== null) {
             orderOutput = orderOutput.slice(0, limit);
         }
-        console.log("orderOUTput",orderOutput)
+        // console.log("orderOUTput",orderOutput)
         if (isDistinct) {
             orderOutput = [...new Map(orderOutput.map(item => [fields.map(field => item[field]).join('|'), item])).values()];
         }
@@ -263,7 +263,7 @@ async function executeSELECTQuery(query) {
         fields.forEach(field => {
             selectedRow[field]=row[field];
         });
-        console.log("final Solution",selectedRow)
+        // console.log("final Solution",selectedRow)
         
         return selectedRow;
     });
@@ -283,8 +283,8 @@ function evaluateCondition(row, clause) {
     // Parse row value and condition value based on their actual types
     const rowValue = parsingValue(row[field]);
     let conditionValue = parsingValue(value);
-    console.log("rowValue",rowValue);
-    console.log("conditionValue",conditionValue);
+    // console.log("rowValue",rowValue);
+    // console.log("conditionValue",conditionValue);
     if (operator === 'LIKE') {
         // Transform SQL LIKE pattern to JavaScript RegExp pattern
         const regexPattern = '^' + value.replace(/%/g, '.*').replace(/_/g, '.') + '$';
@@ -320,11 +320,31 @@ function parsingValue(value) {
     return value;
 }
 
-async function  func() {
-    const query = 'SELECT DISTINCT student.name FROM student INNER JOIN enrollment ON student.id = enrollment.student_id';
-    const result = await executeSELECTQuery(query);
-    // Expecting names of students who are enrolled in any course
-    console.log("Result",result)
+async function executeINSERTQuery(query) {
+    const { table, columns, values } = parseINSERTQuery(query);
+    const data = await readCSV(`${table}.csv`);
+
+    // Creating a fresh row
+    const FRow = {};
+    columns.forEach((column, index) => {
+        let value = values[index];
+        if (value.startsWith("'") && value.endsWith("'")) {
+            value = value.substring(1, value.length - 1);
+        }
+        FRow[column] = value;
+    });
+
+    data.push(FRow);
+
+    await writeCSV(`${table}.csv`, data); 
+    return { message: "Row inserted successfully." };
 }
-func()
-module.exports = executeSELECTQuery;
+
+// async function  func() {
+//     const query = 'SELECT DISTINCT student.name FROM student INNER JOIN enrollment ON student.id = enrollment.student_id';
+//     const result = await executeSELECTQuery(query);
+//     // Expecting names of students who are enrolled in any course
+//     console.log("Result",result)
+// }
+// func()
+module.exports = {executeSELECTQuery,executeINSERTQuery};
