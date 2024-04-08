@@ -176,8 +176,28 @@ function parseINSERTQuery(query){
     }
 }
 
+function parseDeleteQuery(query){
+    // const deleteRegex = /^DELETE\s+FROM\s+\w+(\s+WHERE\s+.+)?;?$/i;
+    const deleteRegex = /DELETE FROM (\w+)( WHERE (.*))?/i;
+    const match = query.match(deleteRegex);
+    if (!match) {
+        throw new Error("Wrong DELETE syntax.");
+    }
+    const [, table, , whereString] = match;
+    let whereClauses = [];
+    if (whereString) {
+        whereClauses = parseWhereClause(whereString);
+    }
+
+    return {
+        type: 'DELETE',
+        table: table.trim(),
+        whereClauses
+    };
+}
+
 // const query = "SELECT DISTINCT name FROM student WHERE name LIKE '%e%";
 // const res = parseSelectQuery(query)
 
 
-module.exports = {parseSelectQuery,parseJoinClause,parseINSERTQuery};
+module.exports = {parseSelectQuery,parseJoinClause,parseINSERTQuery,parseDeleteQuery};
